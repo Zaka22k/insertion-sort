@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "InsertionSort (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "InsertionSort (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
