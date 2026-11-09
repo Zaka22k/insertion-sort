@@ -34,7 +34,7 @@ public sealed class MainViewModel : ObservableObject
 
         AddInputCommand = new RelayCommand(AddInput, () => CanAddInput);
         AddRandomValuesCommand = new RelayCommand(AddRandomValues, () => CanEditValues);
-        RemoveLastValueCommand = new RelayCommand(RemoveLastValue, () => CanRemoveLastValue);
+        RemoveLastValueCommand = new RelayCommand(() => { RemoveLastValue(); }, () => CanRemoveLastValue);
         ClearValuesCommand = new RelayCommand(ClearValues, () => CanClearValues);
         SortCommand = new RelayCommand(SortAll, () => CanStartSorting);
     }
