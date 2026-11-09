@@ -15,6 +15,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly ObservableCollection<double> _values = new();
     private readonly ObservableCollection<SortCellViewModel> _cells = new();
     private readonly InsertionSortAlgorithm _algorithm;
+    private SortCellViewModel? _heldKeyCell;
     private int _nextExpectedStepNumber;
     private SortStep? _currentStep;
     private bool _isSorting;
@@ -97,13 +98,20 @@ public sealed class MainViewModel : ObservableObject
 
     public bool CanCancelSorting => IsSorting;
 
-    public bool HasCurrentKey => CurrentStep?.KeyValue is not null;
+    public bool HasCurrentKey =>
+        CurrentStep is
+        {
+            Kind: SortStepKind.KeySelected or SortStepKind.Compared or SortStepKind.Shifted,
+            KeyValue: not null
+        };
 
     public string CurrentStepNumberText => CurrentStep is null
         ? "Шаг не начат"
         : $"Шаг {CurrentStep.Number}";
 
-    public string CurrentKeyText => CurrentStep?.KeyValue?.ToString("G", CultureInfo.CurrentCulture) ?? string.Empty;
+    public string CurrentKeyText => HasCurrentKey
+        ? CurrentStep!.KeyValue!.Value.ToString("G", CultureInfo.CurrentCulture)
+        : string.Empty;
 
     public string SortedCountText
     {
@@ -556,52 +564,110 @@ public sealed class MainViewModel : ObservableObject
 
     private void RefreshCellsFromSource()
     {
+        // A refresh always rebuilds the complete source sequence, including a key
+        // that may have been temporarily removed from the visual collection.
+        _heldKeyCell = null;
+
         var snapshot = _values.Select(static value => (double?)value).ToArray();
         UpdateCells(snapshot, sortedCount: 0);
     }
 
     private void UpdateCells(SortStep step)
     {
-        if (step.Kind == SortStepKind.Shifted)
+        if (step.Kind == SortStepKind.KeySelected)
         {
-            var movedFromIndex = step.MovedFromIndex
-                ?? throw new InvalidOperationException("A shift step must define its source index.");
-            var movedToIndex = step.MovedToIndex
-                ?? throw new InvalidOperationException("A shift step must define its destination index.");
-
-            if ((uint)movedFromIndex >= (uint)_cells.Count ||
-                (uint)movedToIndex >= (uint)_cells.Count)
+            if (_heldKeyCell is not null)
             {
-                throw new InvalidOperationException("A shift step contains an invalid cell index.");
+                throw new InvalidOperationException("A key is already held by the visualisation.");
             }
 
-            if (!_cells[movedToIndex].IsGap || _cells[movedFromIndex].IsGap)
+            var keyIndex = step.KeyIndex
+                ?? throw new InvalidOperationException("A key selection step must define the key index.");
+
+            if ((uint)keyIndex >= (uint)_cells.Count ||
+                step.Values[keyIndex] is not null)
             {
-                throw new InvalidOperationException("The visualisation does not match the expected gap position.");
+                throw new InvalidOperationException("The selected key does not match the visual collection.");
             }
 
-            // Moving the gap preserves each number's cell identity.
-            // GridView animates the resulting item reorder with ReorderThemeTransition.
-            _cells.Move(movedToIndex, movedFromIndex);
+            // Lift the selected key out of the row. GridView animates the removal
+            // and lets the remaining values close the gap.
+            _heldKeyCell = _cells[keyIndex];
+            _cells.RemoveAt(keyIndex);
         }
+        else if (step.Kind == SortStepKind.Inserted)
+        {
+            var keyIndex = step.KeyIndex
+                ?? throw new InvalidOperationException("An insertion step must define the key index.");
+
+            if (_heldKeyCell is null ||
+                (uint)keyIndex > (uint)_cells.Count ||
+                step.Values[keyIndex] is not double insertedValue)
+            {
+                throw new InvalidOperationException("There is no held key to insert at the requested position.");
+            }
+
+            // Prepare the detached key before adding it back, so its insertion
+            // animation starts with the correct value and highlight.
+            _heldKeyCell.Update(
+                keyIndex + 1,
+                insertedValue,
+                isGap: false,
+                isCompared: false,
+                isShifted: false,
+                isInserted: true,
+                isSorted: false);
+
+            _cells.Insert(keyIndex, _heldKeyCell);
+            _heldKeyCell = null;
+        }
+        else if (step.Kind is SortStepKind.Started or SortStepKind.Completed &&
+                 _heldKeyCell is not null)
+        {
+            throw new InvalidOperationException("The sorting step sequence ended while a key was still held.");
+        }
+
+        var expectedCellCount = step.Values.Count(static value => value is not null);
+        if (_cells.Count != expectedCellCount)
+        {
+            throw new InvalidOperationException(
+                $"The visual row contains {_cells.Count} cells, but the current step requires {expectedCellCount}.");
+        }
+
+        var visualIndex = 0;
 
         for (var index = 0; index < step.Values.Count; index++)
         {
             var value = step.Values[index];
-            var isGap = value is null && step.KeyIndex == index;
+
+            // The null entry is the logical insertion gap. The selected key is
+            // outside the row until the Inserted step, so no empty placeholder is shown.
+            if (value is null)
+            {
+                continue;
+            }
+
             var isCompared = step.ComparedIndex == index;
-            var isShifted = step.Kind == SortStepKind.Shifted && step.MovedToIndex == index;
-            var isInserted = step.Kind == SortStepKind.Inserted && step.KeyIndex == index;
+            var isShifted = step.Kind == SortStepKind.Shifted &&
+                step.MovedToIndex == index;
+            var isInserted = step.Kind == SortStepKind.Inserted &&
+                step.KeyIndex == index;
             var isSorted = index < step.SortedCount &&
-                !isGap &&
                 !isCompared &&
                 !isShifted &&
                 !isInserted;
 
-            UpdateCell(index, value, isGap, isCompared, isShifted, isInserted, isSorted);
-        }
+            UpdateCell(
+                visualIndex,
+                value,
+                isGap: false,
+                isCompared,
+                isShifted,
+                isInserted,
+                isSorted);
 
-        TrimCells(step.Values.Count);
+            visualIndex++;
+        }
     }
 
     private void UpdateCells(IReadOnlyList<double?> values, int sortedCount)
