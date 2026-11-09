@@ -4,7 +4,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:InsertionSort"
     xmlns:converters="using:InsertionSort.Converters"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -16,7 +15,7 @@
         </ResourceDictionary>
     </Page.Resources>
 
-    <Grid Padding="28" RowSpacing="22">
+    <Grid Padding="28" RowSpacing="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -37,7 +36,7 @@
                     FontWeight="SemiBold"
                     Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                 <TextBlock
-                    Text="Добавляйте числа и наблюдайте, как формируется отсортированная последовательность."
+                    Text="Наблюдайте, как алгоритм последовательно вставляет элементы в отсортированную часть массива."
                     FontSize="14"
                     TextWrapping="Wrap"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -67,7 +66,7 @@
             </Border>
         </Grid>
 
-        <!-- Main sequence workspace -->
+        <!-- Main visualisation workspace -->
         <Border
             Grid.Row="1"
             Padding="22"
@@ -78,7 +77,9 @@
             <Grid RowSpacing="16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <Grid ColumnSpacing="12">
@@ -89,7 +90,7 @@
 
                     <StackPanel Spacing="3">
                         <TextBlock
-                            Text="Последовательность"
+                            Text="Визуализация алгоритма"
                             FontSize="18"
                             FontWeight="SemiBold"
                             Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
@@ -99,15 +100,65 @@
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
 
-                    <TextBlock
+                    <Border
                         Grid.Column="1"
-                        Text="Исходный массив"
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        VerticalAlignment="Center" />
+                        Padding="12,7"
+                        CornerRadius="9"
+                        Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                        VerticalAlignment="Center">
+                        <TextBlock
+                            Text="{Binding CurrentStepNumberText}"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                    </Border>
                 </Grid>
 
-                <Grid Grid.Row="1">
+                <!-- Current operation and key -->
+                <Grid Grid.Row="1" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <TextBlock
+                            Text="{Binding CurrentStepDescription}"
+                            FontSize="14"
+                            TextWrapping="Wrap"
+                            Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                        <TextBlock
+                            Text="{Binding SortedCountText}"
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <Border
+                        Grid.Column="1"
+                        Padding="12,8"
+                        CornerRadius="10"
+                        Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
+                        Visibility="{Binding HasCurrentKey, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock
+                                Text="KEY"
+                                FontSize="11"
+                                FontWeight="Bold"
+                                Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Text="{Binding CurrentKeyText}"
+                                FontSize="20"
+                                FontWeight="SemiBold"
+                                Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Sequence -->
+                <Grid Grid.Row="2">
                     <StackPanel
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
@@ -134,7 +185,7 @@
                     </StackPanel>
 
                     <GridView
-                        ItemsSource="{Binding Values}"
+                        ItemsSource="{Binding Cells}"
                         SelectionMode="None"
                         IsItemClickEnabled="False"
                         IsTabStop="False"
@@ -156,31 +207,113 @@
 
                         <GridView.ItemTemplate>
                             <DataTemplate>
-                                <Border
-                                    Width="104"
-                                    Height="104"
-                                    Margin="7"
-                                    Padding="10"
-                                    CornerRadius="12"
-                                    Background="{ThemeResource ControlFillColorSecondaryBrush}"
-                                    BorderBrush="{ThemeResource ControlElevationBorderBrush}"
-                                    BorderThickness="1">
-                                    <TextBlock
-                                        Text="{Binding}"
-                                        FontSize="27"
-                                        FontWeight="SemiBold"
-                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                <Grid Width="104" Height="112" Margin="7">
+                                    <Border
+                                        CornerRadius="12"
+                                        Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                        BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                                        BorderThickness="1" />
+
+                                    <Border
+                                        CornerRadius="12"
+                                        Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                                        Visibility="{Binding IsSorted, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                    <Border
+                                        CornerRadius="12"
+                                        Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
+                                        Visibility="{Binding IsGap, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                    <Border
+                                        CornerRadius="12"
+                                        Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                                        Visibility="{Binding IsCompared, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                    <Border
+                                        CornerRadius="12"
+                                        Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+                                        Visibility="{Binding IsShifted, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                    <Border
+                                        CornerRadius="12"
+                                        Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+                                        Visibility="{Binding IsInserted, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                    <StackPanel
+                                        VerticalAlignment="Center"
                                         HorizontalAlignment="Center"
-                                        VerticalAlignment="Center" />
-                                </Border>
+                                        Spacing="5">
+                                        <TextBlock
+                                            Text="{Binding DisplayText}"
+                                            FontSize="27"
+                                            FontWeight="SemiBold"
+                                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                            HorizontalAlignment="Center"
+                                            Visibility="{Binding IsGap, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Invert}" />
+                                        <TextBlock
+                                            Text="ПУСТО"
+                                            FontSize="11"
+                                            FontWeight="SemiBold"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            HorizontalAlignment="Center"
+                                            Visibility="{Binding IsGap, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        <TextBlock
+                                            Text="{Binding Position}"
+                                            FontSize="10"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </GridView.ItemTemplate>
                     </GridView>
                 </Grid>
+
+                <!-- Visual legend -->
+                <StackPanel
+                    Grid.Row="3"
+                    Orientation="Horizontal"
+                    Spacing="18"
+                    HorizontalAlignment="Center"
+                    HorizontalContentAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Border
+                            Width="12"
+                            Height="12"
+                            CornerRadius="3"
+                            Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" />
+                        <TextBlock
+                            Text="Позиция ключа"
+                            FontSize="11"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Border
+                            Width="12"
+                            Height="12"
+                            CornerRadius="3"
+                            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" />
+                        <TextBlock
+                            Text="Сравнение"
+                            FontSize="11"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Border
+                            Width="12"
+                            Height="12"
+                            CornerRadius="3"
+                            Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" />
+                        <TextBlock
+                            Text="Перемещение / вставка"
+                            FontSize="11"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
             </Grid>
         </Border>
 
-        <!-- Input and basic actions -->
+        <!-- Input and playback controls -->
         <StackPanel Grid.Row="2" Spacing="10">
             <InfoBar
                 Title="Проверьте ввод"
@@ -190,23 +323,29 @@
                 Severity="Warning" />
 
             <Border
-                Padding="12"
+                Padding="14"
                 CornerRadius="14"
                 Background="{ThemeResource ControlFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                 BorderThickness="1">
-                <ScrollViewer
-                    HorizontalScrollMode="Auto"
-                    HorizontalScrollBarVisibility="Auto"
-                    VerticalScrollMode="Disabled"
-                    VerticalScrollBarVisibility="Disabled">
+                <Grid RowSpacing="12" ColumnSpacing="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Data input -->
                     <StackPanel
                         Orientation="Horizontal"
                         Spacing="8"
                         VerticalAlignment="Center">
                         <TextBox
-                            Width="280"
-                            MinWidth="220"
+                            Width="260"
+                            MinWidth="200"
                             PlaceholderText="Например: 8 3 5 1.5"
                             ToolTipService.ToolTip="Введите числа через пробел или точку с запятой"
                             Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -218,15 +357,13 @@
                             Command="{Binding AddInputCommand}"
                             VerticalAlignment="Center" />
 
-                        <AppBarSeparator />
-
                         <Button
                             Content="Случайный массив"
                             Command="{Binding AddRandomValuesCommand}"
                             VerticalAlignment="Center" />
 
                         <Button
-                            Content="Удалить последний"
+                            Content="Удалить"
                             Command="{Binding RemoveLastValueCommand}"
                             VerticalAlignment="Center" />
 
@@ -234,15 +371,70 @@
                             Content="Очистить"
                             Command="{Binding ClearValuesCommand}"
                             VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Playback actions -->
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        VerticalAlignment="Center">
+                        <Button
+                            Content="Начать"
+                            Command="{Binding SortCommand}"
+                            Visibility="{Binding CanStartSorting, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
 
                         <Button
-                            Content="Сортировать"
-                            Command="{Binding SortCommand}"
+                            Content="Пауза"
+                            Command="{Binding PauseCommand}"
+                            Visibility="{Binding CanPauseSorting, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                        <Button
+                            Content="Продолжить"
+                            Command="{Binding ResumeCommand}"
+                            Visibility="{Binding CanResumeSorting, Converter={StaticResource BooleanToVisibilityConverter}}"
                             Background="{ThemeResource AccentFillColorDefaultBrush}"
-                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                            VerticalAlignment="Center" />
+                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+
+                        <Button
+                            Content="Отменить"
+                            Command="{Binding CancelSortCommand}"
+                            Visibility="{Binding CanCancelSorting, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     </StackPanel>
-                </ScrollViewer>
+
+                    <!-- Speed control -->
+                    <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            Text="Скорость"
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            VerticalAlignment="Center" />
+
+                        <Slider
+                            Grid.Column="1"
+                            Minimum="100"
+                            Maximum="2000"
+                            StepFrequency="100"
+                            Value="{Binding StepDelayMilliseconds, Mode=TwoWay}"
+                            VerticalAlignment="Center"
+                            ToolTipService.ToolTip="Интервал между шагами сортировки" />
+
+                        <TextBlock
+                            Grid.Column="2"
+                            Text="{Binding StepDelayDescription}"
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            VerticalAlignment="Center" />
+                    </Grid>
+                </Grid>
             </Border>
         </StackPanel>
     </Grid>
