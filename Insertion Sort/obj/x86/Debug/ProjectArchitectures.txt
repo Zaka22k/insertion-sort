@@ -1,0 +1,1 @@
+C:\Users\prist\source\repos\Insertion Sort\Insertion Sort\Insertion Sort.csproj;x86
