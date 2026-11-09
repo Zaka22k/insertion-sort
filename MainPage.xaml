@@ -138,10 +138,10 @@
                         VerticalAlignment="Stretch"
                         Padding="8"
                         Visibility="{Binding HasValues, Converter={StaticResource BooleanToVisibilityConverter}}"
-                        ScrollViewer.HorizontalScrollMode="Disabled"
-                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                        ScrollViewer.VerticalScrollMode="Auto"
-                        ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        ScrollViewer.HorizontalScrollMode="Enabled"
+                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                        ScrollViewer.VerticalScrollMode="Disabled"
+                        ScrollViewer.VerticalScrollBarVisibility="Disabled">
                         <GridView.ItemContainerTransitions>
                             <TransitionCollection>
                                 <AddDeleteThemeTransition />
@@ -152,9 +152,7 @@
                         </GridView.ItemContainerTransitions>
                         <GridView.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <ItemsWrapGrid
-                                    Orientation="Horizontal"
-                                    MaximumRowsOrColumns="3" />
+                                <ItemsStackPanel Orientation="Horizontal" />
                             </ItemsPanelTemplate>
                         </GridView.ItemsPanel>
 
