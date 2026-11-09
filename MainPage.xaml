@@ -15,7 +15,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid Padding="28" RowSpacing="20">
+    <Grid Padding="0,28" RowSpacing="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -43,17 +43,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Spacing="3">
-                        <TextBlock
-                            Text="Визуализация алгоритма"
-                            FontSize="18"
-                            FontWeight="SemiBold"
-                            Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
-                        <TextBlock
-                            Text="{Binding StatusMessage}"
-                            FontSize="13"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
+                    
 
                     <Border
                         Grid.Column="1"
@@ -152,6 +142,14 @@
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                         ScrollViewer.VerticalScrollMode="Auto"
                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <GridView.ItemContainerTransitions>
+                            <TransitionCollection>
+                                <AddDeleteThemeTransition />
+                                <ContentThemeTransition />
+                                <ReorderThemeTransition />
+                                <EntranceThemeTransition />
+                            </TransitionCollection>
+                        </GridView.ItemContainerTransitions>
                         <GridView.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <ItemsWrapGrid
@@ -268,7 +266,7 @@
         </Border>
 
         <!-- Input and playback controls -->
-        <StackPanel Grid.Row="1" Spacing="10">
+        <StackPanel Grid.Row="1" Margin="28,0" Spacing="10">
             <InfoBar
                 Title="Проверьте ввод"
                 Message="{Binding InputError}"

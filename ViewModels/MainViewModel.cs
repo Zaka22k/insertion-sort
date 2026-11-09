@@ -562,6 +562,29 @@ public sealed class MainViewModel : ObservableObject
 
     private void UpdateCells(SortStep step)
     {
+        if (step.Kind == SortStepKind.Shifted)
+        {
+            var movedFromIndex = step.MovedFromIndex
+                ?? throw new InvalidOperationException("A shift step must define its source index.");
+            var movedToIndex = step.MovedToIndex
+                ?? throw new InvalidOperationException("A shift step must define its destination index.");
+
+            if ((uint)movedFromIndex >= (uint)_cells.Count ||
+                (uint)movedToIndex >= (uint)_cells.Count)
+            {
+                throw new InvalidOperationException("A shift step contains an invalid cell index.");
+            }
+
+            if (!_cells[movedToIndex].IsGap || _cells[movedFromIndex].IsGap)
+            {
+                throw new InvalidOperationException("The visualisation does not match the expected gap position.");
+            }
+
+            // Moving the gap preserves each number's cell identity.
+            // GridView animates the resulting item reorder with ReorderThemeTransition.
+            _cells.Move(movedToIndex, movedFromIndex);
+        }
+
         for (var index = 0; index < step.Values.Count; index++)
         {
             var value = step.Values[index];
