@@ -23,7 +23,6 @@ public sealed class MainViewModel : ObservableObject
     private string _inputError = string.Empty;
     private string _statusMessage = "Добавьте числа или создайте случайный массив.";
     private string _currentStepDescription = "Ожидание сортировки.";
-    private string _currentKeyText = string.Empty;
     private double _stepDelayMilliseconds = 450;
     private CancellationTokenSource? _sortingCancellation;
     private TaskCompletionSource? _resumeSignal;
@@ -198,6 +197,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _statusMessage;
         private set => SetProperty(ref _statusMessage, value);
+    }
+
+    public string CurrentStepDescription
+    {
+        get => _currentStepDescription;
+        private set => SetProperty(ref _currentStepDescription, value);
     }
 
     /// <summary>
@@ -416,8 +421,11 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        var resumeSignal = _resumeSignal;
+        _resumeSignal = null;
+        IsPaused = false;
+        resumeSignal?.TrySetResult();
         _sortingCancellation?.Cancel();
-        _resumeSignal?.TrySetResult();
     }
 
     private async Task StartSortingAsync()

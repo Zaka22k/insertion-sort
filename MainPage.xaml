@@ -249,7 +249,7 @@
                                             FontWeight="SemiBold"
                                             Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                                             HorizontalAlignment="Center"
-                                            Visibility="{Binding IsGap, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Invert}" />
+                                            />
                                         <TextBlock
                                             Text="ПУСТО"
                                             FontSize="11"
