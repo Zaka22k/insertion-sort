@@ -5,14 +5,245 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:InsertionSort"
+    xmlns:converters="using:InsertionSort.Converters"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <!--
-        This is the main content area of your application.
-        Add your UI elements here — for example, controls, layouts, and data-bound views.
-        Use 'dotnet new winui-page' to create additional pages and navigate to them via
-        the Frame in MainWindow (RootFrame).
-    -->
-    <Grid />
+    <Page.Resources>
+        <ResourceDictionary>
+            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <Grid Padding="28" RowSpacing="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Page header -->
+        <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Spacing="5" VerticalAlignment="Center">
+                <TextBlock
+                    Text="Сортировка вставками"
+                    FontSize="30"
+                    FontWeight="SemiBold"
+                    Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                <TextBlock
+                    Text="Добавляйте числа и наблюдайте, как формируется отсортированная последовательность."
+                    FontSize="14"
+                    TextWrapping="Wrap"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+
+            <Border
+                Grid.Column="1"
+                Padding="16,10"
+                CornerRadius="12"
+                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                BorderThickness="1"
+                VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock
+                        Text="{Binding ValueCount}"
+                        FontSize="24"
+                        FontWeight="SemiBold"
+                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                        VerticalAlignment="Center" />
+                    <TextBlock
+                        Text="чисел"
+                        FontSize="13"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Main sequence workspace -->
+        <Border
+            Grid.Row="1"
+            Padding="22"
+            CornerRadius="16"
+            Background="{ThemeResource ControlFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+            BorderThickness="1">
+            <Grid RowSpacing="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Spacing="3">
+                        <TextBlock
+                            Text="Последовательность"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                        <TextBlock
+                            Text="{Binding StatusMessage}"
+                            FontSize="13"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Исходный массив"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        VerticalAlignment="Center" />
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8"
+                        Visibility="{Binding IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <FontIcon
+                            Glyph="&#xE9D2;"
+                            FontSize="34"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            HorizontalAlignment="Center" />
+                        <TextBlock
+                            Text="Пока нет чисел"
+                            FontSize="20"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                            HorizontalAlignment="Center" />
+                        <TextBlock
+                            Text="Введите значения ниже или создайте случайный массив."
+                            FontSize="13"
+                            TextWrapping="Wrap"
+                            TextAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <GridView
+                        ItemsSource="{Binding Values}"
+                        SelectionMode="None"
+                        IsItemClickEnabled="False"
+                        IsTabStop="False"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Padding="8"
+                        Visibility="{Binding HasValues, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        ScrollViewer.HorizontalScrollMode="Disabled"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        ScrollViewer.VerticalScrollMode="Auto"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <GridView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid
+                                    Orientation="Horizontal"
+                                    MaximumRowsOrColumns="3" />
+                            </ItemsPanelTemplate>
+                        </GridView.ItemsPanel>
+
+                        <GridView.ItemTemplate>
+                            <DataTemplate>
+                                <Border
+                                    Width="104"
+                                    Height="104"
+                                    Margin="7"
+                                    Padding="10"
+                                    CornerRadius="12"
+                                    Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                    BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                                    BorderThickness="1">
+                                    <TextBlock
+                                        Text="{Binding}"
+                                        FontSize="27"
+                                        FontWeight="SemiBold"
+                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Border>
+                            </DataTemplate>
+                        </GridView.ItemTemplate>
+                    </GridView>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Input and basic actions -->
+        <StackPanel Grid.Row="2" Spacing="10">
+            <InfoBar
+                Title="Проверьте ввод"
+                Message="{Binding InputError}"
+                IsOpen="{Binding HasInputError}"
+                IsClosable="False"
+                Severity="Warning" />
+
+            <Border
+                Padding="12"
+                CornerRadius="14"
+                Background="{ThemeResource ControlFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                BorderThickness="1">
+                <ScrollViewer
+                    HorizontalScrollMode="Auto"
+                    HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollMode="Disabled"
+                    VerticalScrollBarVisibility="Disabled">
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        VerticalAlignment="Center">
+                        <TextBox
+                            Width="280"
+                            MinWidth="220"
+                            PlaceholderText="Например: 8 3 5 1.5"
+                            ToolTipService.ToolTip="Введите числа через пробел или точку с запятой"
+                            Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            IsEnabled="{Binding CanEditValues}"
+                            VerticalAlignment="Center" />
+
+                        <Button
+                            Content="Добавить"
+                            Command="{Binding AddInputCommand}"
+                            VerticalAlignment="Center" />
+
+                        <AppBarSeparator />
+
+                        <Button
+                            Content="Случайный массив"
+                            Command="{Binding AddRandomValuesCommand}"
+                            VerticalAlignment="Center" />
+
+                        <Button
+                            Content="Удалить последний"
+                            Command="{Binding RemoveLastValueCommand}"
+                            VerticalAlignment="Center" />
+
+                        <Button
+                            Content="Очистить"
+                            Command="{Binding ClearValuesCommand}"
+                            VerticalAlignment="Center" />
+
+                        <Button
+                            Content="Сортировать"
+                            Command="{Binding SortCommand}"
+                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                            VerticalAlignment="Center" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </StackPanel>
+    </Grid>
 </Page>

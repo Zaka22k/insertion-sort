@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Globalization;
 using InsertionSort.Algorithms;
 using InsertionSort.Infrastructure;
 using InsertionSort.Models;
@@ -16,6 +17,9 @@ public sealed class MainViewModel : ObservableObject
     private int _nextExpectedStepNumber;
     private SortStep? _currentStep;
     private bool _isSorting;
+    private string _inputText = string.Empty;
+    private string _inputError = string.Empty;
+    private string _statusMessage = "Добавьте числа или создайте случайный массив.";
 
     public MainViewModel()
         : this(new InsertionSortAlgorithm())
@@ -26,8 +30,13 @@ public sealed class MainViewModel : ObservableObject
     {
         _algorithm = algorithm ?? throw new ArgumentNullException(nameof(algorithm));
         Values = new ReadOnlyObservableCollection<double>(_values);
-
         _values.CollectionChanged += OnValuesChanged;
+
+        AddInputCommand = new RelayCommand(AddInput, () => CanAddInput);
+        AddRandomValuesCommand = new RelayCommand(AddRandomValues, () => CanEditValues);
+        RemoveLastValueCommand = new RelayCommand(RemoveLastValue, () => CanRemoveLastValue);
+        ClearValuesCommand = new RelayCommand(ClearValues, () => CanClearValues);
+        SortCommand = new RelayCommand(SortAll, () => CanStartSorting);
     }
 
     /// <summary>
@@ -36,9 +45,29 @@ public sealed class MainViewModel : ObservableObject
     /// </summary>
     public ReadOnlyObservableCollection<double> Values { get; }
 
+    public RelayCommand AddInputCommand { get; }
+
+    public RelayCommand AddRandomValuesCommand { get; }
+
+    public RelayCommand RemoveLastValueCommand { get; }
+
+    public RelayCommand ClearValuesCommand { get; }
+
+    public RelayCommand SortCommand { get; }
+
     public bool HasValues => _values.Count > 0;
 
+    public bool IsEmpty => !HasValues;
+
+    public int ValueCount => _values.Count;
+
     public bool CanEditValues => !IsSorting;
+
+    public bool CanAddInput => CanEditValues && !string.IsNullOrWhiteSpace(InputText);
+
+    public bool CanRemoveLastValue => CanEditValues && HasValues;
+
+    public bool CanClearValues => CanEditValues && HasValues;
 
     public bool CanStartSorting => !IsSorting && _values.Count > 1;
 
@@ -56,9 +85,47 @@ public sealed class MainViewModel : ObservableObject
             if (SetProperty(ref _isSorting, value))
             {
                 OnPropertyChanged(nameof(CanEditValues));
+                OnPropertyChanged(nameof(CanAddInput));
+                OnPropertyChanged(nameof(CanRemoveLastValue));
+                OnPropertyChanged(nameof(CanClearValues));
                 OnPropertyChanged(nameof(CanStartSorting));
+                NotifyCommandStates();
             }
         }
+    }
+
+    public string InputText
+    {
+        get => _inputText;
+        set
+        {
+            if (SetProperty(ref _inputText, value))
+            {
+                InputError = string.Empty;
+                OnPropertyChanged(nameof(CanAddInput));
+                AddInputCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public string InputError
+    {
+        get => _inputError;
+        private set
+        {
+            if (SetProperty(ref _inputError, value))
+            {
+                OnPropertyChanged(nameof(HasInputError));
+            }
+        }
+    }
+
+    public bool HasInputError => !string.IsNullOrWhiteSpace(InputError);
+
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        private set => SetProperty(ref _statusMessage, value);
     }
 
     /// <summary>
@@ -89,6 +156,8 @@ public sealed class MainViewModel : ObservableObject
         {
             _values.Add(value);
         }
+
+        StatusMessage = $"Добавлено чисел: {incomingValues.Length}.";
     }
 
     /// <summary>
@@ -105,6 +174,7 @@ public sealed class MainViewModel : ObservableObject
 
         _values.RemoveAt(_values.Count - 1);
         CurrentStep = null;
+        StatusMessage = "Последнее число удалено.";
         return true;
     }
 
@@ -115,13 +185,10 @@ public sealed class MainViewModel : ObservableObject
     {
         EnsureValuesCanBeEdited();
 
-        if (_values.Count == 0)
-        {
-            return;
-        }
-
         _values.Clear();
         CurrentStep = null;
+        InputError = string.Empty;
+        StatusMessage = "Список очищен.";
     }
 
     /// <summary>
@@ -141,6 +208,7 @@ public sealed class MainViewModel : ObservableObject
         CurrentStep = null;
         _nextExpectedStepNumber = 1;
         IsSorting = true;
+        StatusMessage = "Выполняется сортировка…";
 
         return steps;
     }
@@ -203,6 +271,7 @@ public sealed class MainViewModel : ObservableObject
 
         _nextExpectedStepNumber = 0;
         IsSorting = false;
+        StatusMessage = "Сортировка завершена.";
     }
 
     /// <summary>
@@ -218,6 +287,106 @@ public sealed class MainViewModel : ObservableObject
         _nextExpectedStepNumber = 0;
         CurrentStep = null;
         IsSorting = false;
+        StatusMessage = "Сортировка отменена.";
+    }
+
+    private void AddInput()
+    {
+        var tokens = InputText.Split(
+            new[] { ' ', '\t', '\r', '\n', ';' },
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        var parsedValues = new List<double>();
+        var invalidValues = new List<string>();
+
+        foreach (var token in tokens)
+        {
+            if (TryParseFiniteNumber(token, out var value))
+            {
+                parsedValues.Add(value);
+            }
+            else
+            {
+                invalidValues.Add(token);
+            }
+        }
+
+        if (parsedValues.Count > 0)
+        {
+            AddValues(parsedValues);
+        }
+
+        InputText = string.Empty;
+
+        if (invalidValues.Count > 0)
+        {
+            InputError = $"Не удалось добавить значения: {string.Join(", ", invalidValues)}.";
+        }
+        else if (parsedValues.Count == 0)
+        {
+            InputError = "Введите хотя бы одно конечное число.";
+        }
+    }
+
+    private void AddRandomValues()
+    {
+        const int count = 10;
+        var randomValues = Enumerable
+            .Range(0, count)
+            .Select(_ => (double)Random.Shared.Next(-100, 101));
+
+        AddValues(randomValues);
+        InputError = string.Empty;
+    }
+
+    private void SortAll()
+    {
+        var steps = BeginSorting();
+
+        try
+        {
+            foreach (var step in steps)
+            {
+                ApplyStep(step);
+            }
+        }
+        catch
+        {
+            CancelSorting();
+            throw;
+        }
+    }
+
+    private static bool TryParseFiniteNumber(string text, out double value)
+    {
+        const NumberStyles styles = NumberStyles.Float;
+
+        if (double.TryParse(text, styles, CultureInfo.CurrentCulture, out value)
+            && double.IsFinite(value))
+        {
+            return true;
+        }
+
+        if (double.TryParse(text, styles, CultureInfo.InvariantCulture, out value)
+            && double.IsFinite(value))
+        {
+            return true;
+        }
+
+        if (text.Contains(',') &&
+            !text.Contains('.') &&
+            double.TryParse(
+                text.Replace(',', '.'),
+                styles,
+                CultureInfo.InvariantCulture,
+                out value) &&
+            double.IsFinite(value))
+        {
+            return true;
+        }
+
+        value = default;
+        return false;
     }
 
     private void EnsureValuesCanBeEdited()
@@ -232,6 +401,20 @@ public sealed class MainViewModel : ObservableObject
     private void OnValuesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         OnPropertyChanged(nameof(HasValues));
+        OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(ValueCount));
+        OnPropertyChanged(nameof(CanRemoveLastValue));
+        OnPropertyChanged(nameof(CanClearValues));
         OnPropertyChanged(nameof(CanStartSorting));
+        NotifyCommandStates();
+    }
+
+    private void NotifyCommandStates()
+    {
+        AddInputCommand?.NotifyCanExecuteChanged();
+        AddRandomValuesCommand?.NotifyCanExecuteChanged();
+        RemoveLastValueCommand?.NotifyCanExecuteChanged();
+        ClearValuesCommand?.NotifyCanExecuteChanged();
+        SortCommand?.NotifyCanExecuteChanged();
     }
 }
