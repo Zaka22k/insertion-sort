@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace InsertionSort;
 
-public sealed partial class MainPage : Page
+public sealed partial class MainPage : UserControl
 {
     public MainViewModel ViewModel { get; }
 
